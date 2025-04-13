@@ -1,37 +1,46 @@
 ﻿using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text.Json;
 using DotNetEnv;
 
 
-HttpClient client = new HttpClient();
-client.DefaultRequestHeaders.UserAgent.ParseAdd("GumroadStarTracker");
+class Program{
 
-Env.Load();
-string token = Environment.GetEnvironmentVariable("gumroad_access_token");
-client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", token);
-var starCountGlobal = 0;
+static async Task Main(string[] args)
+{
 
-while (true){
-    var response = client.GetAsync("https://api.github.com/repos/antiwork/gumroad").Result;
-    string jsonResult = await response.Content.ReadAsStringAsync();
+    HttpClient client = new HttpClient();
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("GumroadStarTracker");
 
-    
-    using var doc = JsonDocument.Parse(jsonResult);
-    var starCount = doc.RootElement.GetProperty("stargazers_count").GetInt32();
+    Env.Load();
+    string token = Environment.GetEnvironmentVariable("gumroad_access_token");
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", token);
+    var starCountGlobal = 0;
 
-    Console.WriteLine("starCount " + starCount);
+    while (true)
+    {
+        var response = await client.GetAsync("https://api.github.com/repos/antiwork/gumroad");
+        string jsonResult = await response.Content.ReadAsStringAsync();
 
-    starCountGlobal = starCount;
-    await Task.Delay(5000);
 
-    var hasStarred = false;
-    if(starCount == 4949 && !hasStarred){
-        var startResponse = await client.PutAsync("https://api.github.com/user/starred/antiwork/gumroad" , new StringContent(""));
-        Console.WriteLine("Starred status " + startResponse.StatusCode);
-        hasStarred = true;
-        break;
+        using var doc = JsonDocument.Parse(jsonResult);
+        var starCount = doc.RootElement.GetProperty("stargazers_count").GetInt32();
+
+        Console.WriteLine("starCount " + starCount);
+
+
+        if (starCount == 4999)
+        {
+            var startResponse = await client.PutAsync("https://api.github.com/user/starred/antiwork/gumroad", new StringContent(""));
+            Console.WriteLine("Starred status " + startResponse.StatusCode);
+            starCountGlobal = starCount + 1;
+            break;
+        }
+        await Task.Delay(719);
+
     }
+    Console.WriteLine("Congrats You are the " + starCountGlobal + "th Stargazer...");
 
 }
-Console.WriteLine("Congrats You are the " + starCountGlobal +"th Stargazer...");
+}
